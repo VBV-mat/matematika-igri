@@ -1,2 +1,536 @@
-<!doctype html><html lang="bg"><meta charset="utf-8">
-<title>Умножение</title><body><h1>Тренажор – Таблица за умножение</h1><p>Работи!</p></body></html>
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умножение Мастер</title>
+    <style>
+        :root {
+            --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary-btn: #2ecc71;
+            --primary-btn-hover: #27ae60;
+            --secondary-btn: #f1c40f;
+            --secondary-btn-hover: #f39c12;
+            --next-btn: #3498db;
+            --next-btn-hover: #2980b9;
+            --text-color: #2c3e50;
+            --accent-color: #8e44ad;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--header-bg);
+            width: 100%;
+            padding: 1.5rem 0;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header h1 { margin: 0; font-size: 2.2rem; font-weight: 800; z-index: 2; position: relative; }
+        header p { margin: 0.5rem 0 0; opacity: 0.9; z-index: 2; position: relative; }
+
+        /* Бухалче (дясно) */
+        .owl-icon {
+            font-size: 3rem;
+            position: absolute;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #f1c40f;
+            z-index: 1;
+        }
+
+        /* Скриване на бухала на много малки екрани, за да не пречи */
+        @media (max-width: 600px) { 
+            .owl-icon { display: none; }
+        }
+
+        /* --- Main Layout --- */
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+            padding: 2rem;
+            max-width: 900px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* --- Status Bar --- */
+        .status-bar {
+            width: 100%;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .timer { color: #e67e22; }
+
+        /* --- Question Card --- */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            flex: 1 1 300px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .equation {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .num { color: #5dade2; }
+        .operator { color: #95a5a6; }
+        .num:nth-child(3) { color: #e74c3c; }
+
+        .answer-box {
+            display: inline-block;
+            width: 100px;
+            height: 80px;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            font-size: 3rem;
+            line-height: 80px;
+            color: #333;
+            background: #fafafa;
+            vertical-align: middle;
+        }
+        
+        .answer-box.filled {
+            border-style: solid;
+            background: white;
+            border-color: var(--accent-color);
+        }
+
+        /* --- Visual Hint Styles --- */
+        .visual-hint-container {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease-out;
+        }
+
+        .visual-hint-container.visible {
+            opacity: 1;
+            max-height: 500px;
+            padding: 15px;
+            border: 1px dashed #cbd5e0;
+        }
+
+        .hint-group {
+            border: 2px solid #5dade2;
+            border-radius: 8px;
+            padding: 5px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(10px, 1fr));
+            gap: 4px;
+            background: white;
+        }
+
+        .hint-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            display: inline-block;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        @keyframes popIn { to { opacity: 1; transform: scale(1); } }
+        .hint-text { display: block; font-size: 0.9rem; color: #7f8c8d; margin-bottom: 5px; }
+
+        /* --- Buttons --- */
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            min-height: 50px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:active { transform: scale(0.96); }
+        
+        .btn-check { background-color: var(--primary-btn); box-shadow: 0 4px 0 #27ae60; }
+        .btn-check:hover { background-color: var(--primary-btn-hover); }
+        
+        .btn-hint { background-color: var(--secondary-btn); color: #333; box-shadow: 0 4px 0 #d35400; }
+        .btn-hint:hover { background-color: var(--secondary-btn-hover); }
+
+        .btn-next { 
+            background-color: var(--next-btn); 
+            box-shadow: 0 4px 0 #2980b9; 
+            display: none; 
+        }
+        .btn-next:hover { background-color: var(--next-btn-hover); }
+
+        /* --- Keypad --- */
+        .keypad-container { flex: 0 1 280px; display: flex; flex-direction: column; gap: 1.5rem; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: white; padding: 1.5rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .key { background: #f7f9fa; border: none; border-radius: 10px; font-size: 1.5rem; font-weight: bold; color: #2c3e50; padding: 15px 0; cursor: pointer; box-shadow: 0 3px 0 #e1e4e8; }
+        .key:active { box-shadow: 0 0 0; transform: translateY(3px); }
+        .key-clear { background: #ffeaa7; color: #d35400; }
+        .key-back { background: #ff7675; color: white; }
+
+        /* --- Fact Box --- */
+        .fact-box { 
+            background: #e8f4fd; 
+            border-left: 5px solid #3498db; 
+            padding: 1rem; 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            color: #2c3e50;
+            line-height: 1.4;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .fact-box.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* --- Animations --- */
+        #canvas-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+        .sad-face-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 8rem; pointer-events: none; transition: transform 0.3s; z-index: 10; }
+        .sad-face-overlay.show { transform: translate(-50%, -50%) scale(1); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="owl-icon">🦉</div>
+        <h1>Умножение Мастер</h1>
+        <p>Научи таблицата за умножение докато се забавляваш!</p>
+    </header>
+
+    <div class="main-container">
+        <div class="status-bar">
+            <div class="stat-item" style="color: #2ecc71;">✅ Вярни: <span id="score">0</span></div>
+            <div class="stat-item" style="color: #e67e22;">🔥 Поредица: <span id="streak">0</span></div>
+            <div class="stat-item timer">⏱️ <span id="timer">00:00</span></div>
+        </div>
+
+        <div class="card">
+            <div class="sad-face-overlay" id="sad-face">😢</div>
+            
+            <div class="equation">
+                <span class="num" id="num1">?</span>
+                <span class="operator">×</span>
+                <span class="num" id="num2">?</span>
+                <span class="operator">=</span>
+                <div class="answer-box" id="display"></div>
+            </div>
+
+            <div id="visual-hint-area" class="visual-hint-container"></div>
+
+            <div class="actions">
+                <button id="btn-check" class="btn btn-check" onclick="checkAnswer()"><span>✓</span> ПРОВЕРИ</button>
+                <button id="btn-hint" class="btn btn-hint" onclick="showVisualHint()"><span>💡</span> Подсказка</button>
+                <button id="btn-next" class="btn btn-next" onclick="nextQuestion()"><span>➡️</span> НОВА ЗАДАЧА</button>
+            </div>
+        </div>
+
+        <div class="keypad-container">
+            <div class="keypad">
+                <button class="key" onclick="inputDigit(1)">1</button>
+                <button class="key" onclick="inputDigit(2)">2</button>
+                <button class="key" onclick="inputDigit(3)">3</button>
+                <button class="key" onclick="inputDigit(4)">4</button>
+                <button class="key" onclick="inputDigit(5)">5</button>
+                <button class="key" onclick="inputDigit(6)">6</button>
+                <button class="key" onclick="inputDigit(7)">7</button>
+                <button class="key" onclick="inputDigit(8)">8</button>
+                <button class="key" onclick="inputDigit(9)">9</button>
+                <button class="key key-back" onclick="backspace()">⌫</button>
+                <button class="key" onclick="inputDigit(0)">0</button>
+                <button class="key key-clear" onclick="clearInput()">C</button>
+            </div>
+
+            <div class="fact-box" id="fact-box">
+                <span style="font-weight:bold; display:block; margin-bottom:5px; color:#2980b9;">🎓 Знаеш ли за това число?</span>
+                <span id="fact-text">...</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas-overlay"></canvas>
+
+    <script>
+        let currentNum1, currentNum2;
+        let currentAnswer = "";
+        let score = 0;
+        let streak = 0;
+        let timerSeconds = 0;
+        let timerInterval;
+        
+        const display = document.getElementById('display');
+        const scoreEl = document.getElementById('score');
+        const streakEl = document.getElementById('streak');
+        const sadFace = document.getElementById('sad-face');
+        const hintArea = document.getElementById('visual-hint-area');
+        const factBox = document.getElementById('fact-box');
+        
+        const btnCheck = document.getElementById('btn-check');
+        const btnHint = document.getElementById('btn-hint');
+        const btnNext = document.getElementById('btn-next');
+
+        function initGame() {
+            generateQuestion();
+            startTimer();
+        }
+
+        function generateQuestion() {
+            currentNum1 = Math.floor(Math.random() * 9) + 1;
+            currentNum2 = Math.floor(Math.random() * 9) + 1;
+            
+            document.getElementById('num1').textContent = currentNum1;
+            document.getElementById('num2').textContent = currentNum2;
+            
+            currentAnswer = "";
+            updateDisplay();
+            sadFace.classList.remove('show');
+            hintArea.classList.remove('visible');
+            hintArea.innerHTML = ''; 
+            factBox.classList.remove('visible');
+            
+            btnCheck.style.display = 'flex';
+            btnHint.style.display = 'flex';
+            btnNext.style.display = 'none';
+        }
+
+        function nextQuestion() {
+            generateQuestion();
+        }
+
+        function updateContextualFact(n1, n2) {
+            const product = n1 * n2;
+            const factText = document.getElementById('fact-text');
+            let msg = "";
+
+            if (n1 === n2) {
+                msg = `Числото ${product} се нарича "Квадратно число", защото се получава като умножиш ${n1} по самото него! 🟥`;
+            } else if (n1 === 1 || n2 === 1) {
+                msg = "Всяко число, умножено по 1, си остава същото! То е като огледало. 🪞";
+            } else if (n1 === 5 || n2 === 5) {
+                msg = "Хитър трик: Числата, умножени по 5, винаги завършват на 0 или 5! ✋";
+            } else if (n1 === 9 || n2 === 9) {
+                msg = "Магията на 9: Ако събереш цифрите на резултата (напр. 1+8=9), винаги получаваш 9! 🎩";
+            } else if (n1 === 2 || n2 === 2) {
+                msg = "Умножението по 2 е просто събиране на числото със себе си (удвояване). 👯";
+            } else if (product === 12) {
+                msg = "12 се нарича 'дузина'. Имаме 12 месеца в годината! 📅";
+            } else if (product === 24) {
+                msg = "24 е точно броят на часовете в едно денонощие! 🌍";
+            } else if (n1 === 4 || n2 === 4) {
+                msg = "Представи си куче или коте – те имат по 4 лапички! 🐾";
+            } else if (n1 === 7 || n2 === 7) {
+                msg = "Знаеш ли, че в седмицата има точно 7 дни? 🌈";
+            } else if (n1 === 8 || n2 === 8) {
+                msg = "Паяците са известни с това, че имат точно 8 крака! 🕷️";
+            } else if (n1 === 6 || n2 === 6) {
+                msg = "Насекомите (като пчелите и мравките) имат по 6 крака. 🐜";
+            } else if (n1 === 3 || n2 === 3) {
+                msg = "Триъгълникът е фигура с точно 3 страни и 3 ъгъла. 📐";
+            } else {
+                msg = `Умножението ${n1} × ${n2} означава да вземеш числото ${n1} точно ${n2} пъти.`;
+            }
+
+            factText.textContent = msg;
+        }
+
+        function updateDisplay() {
+            display.textContent = currentAnswer;
+            display.classList.toggle('filled', currentAnswer.length > 0);
+        }
+
+        function inputDigit(digit) {
+            if (btnNext.style.display === 'flex') return;
+            if (currentAnswer.length < 3) {
+                currentAnswer += digit;
+                updateDisplay();
+            }
+        }
+
+        function backspace() {
+            if (btnNext.style.display === 'flex') return;
+            currentAnswer = currentAnswer.slice(0, -1);
+            updateDisplay();
+        }
+
+        function clearInput() {
+            if (btnNext.style.display === 'flex') return;
+            currentAnswer = "";
+            updateDisplay();
+        }
+
+        function showVisualHint() {
+            if (hintArea.classList.contains('visible')) return;
+            
+            let gridCols = currentNum2 <= 4 ? 2 : 3; 
+            hintArea.innerHTML = `<div style="width:100%; text-align:center;" class="hint-text">Визуализация: ${currentNum1} кутийки с по ${currentNum2} точки</div>`;
+            
+            for (let i = 0; i < currentNum1; i++) {
+                const group = document.createElement('div');
+                group.className = 'hint-group';
+                group.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+                
+                for (let j = 0; j < currentNum2; j++) {
+                    const dot = document.createElement('span');
+                    dot.className = 'hint-dot';
+                    dot.style.animationDelay = `${(i * 100) + (j * 50)}ms`;
+                    group.appendChild(dot);
+                }
+                hintArea.appendChild(group);
+            }
+            hintArea.classList.add('visible');
+        }
+
+        function checkAnswer() {
+            if (currentAnswer === "") return;
+            const correctAnswer = currentNum1 * currentNum2;
+            
+            if (parseInt(currentAnswer) === correctAnswer) {
+                score++; streak++;
+                scoreEl.textContent = score;
+                streakEl.textContent = streak;
+                fireworks(window.innerWidth / 2, window.innerHeight / 2);
+                
+                updateContextualFact(currentNum1, currentNum2);
+                factBox.classList.add('visible');
+
+                btnCheck.style.display = 'none';
+                btnHint.style.display = 'none';
+                btnNext.style.display = 'flex';
+                btnNext.focus();
+            } else {
+                streak = 0;
+                streakEl.textContent = streak;
+                sadFace.classList.add('show');
+                setTimeout(() => sadFace.classList.remove('show'), 1500);
+                clearInput();
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerSeconds = 0;
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+                const secs = (timerSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        const canvas = document.getElementById('canvas-overlay');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particles = [];
+
+        function fireworks(x, y) {
+            const colors = ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', '#a29bfe'];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    life: 1, color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+            animateParticles();
+        }
+
+        function animateParticles() {
+            if (particles.length === 0) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill();
+                if (p.life <= 0) particles.splice(index, 1);
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (btnNext.style.display === 'flex') {
+                    nextQuestion();
+                } else {
+                    checkAnswer();
+                }
+            }
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
